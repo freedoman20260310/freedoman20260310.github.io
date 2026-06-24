@@ -1,1 +1,1 @@
-# freedoman20260310.github.io
+Display app information.
