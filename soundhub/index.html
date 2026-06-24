@@ -1,0 +1,835 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SoundHub - 个人音频中心</title>
+  <meta name="description" content="SoundHub 是为长音频、播客、课程、访谈和会议录音准备的个人音频中心，支持本地音频、网盘音频、播放列表、离线下载、断点续播和可选字幕转写。">
+  <meta property="og:title" content="SoundHub - 个人音频中心">
+  <meta property="og:description" content="集中管理本地与网盘音频，继续上次进度，生成跟随播放的字幕。">
+  <meta property="og:type" content="website">
+  <meta property="og:image" content="assets/soundhub-app-icon-cloud.png">
+  <link rel="icon" href="assets/soundhub-app-icon-cloud.png">
+  <style>
+    :root {
+      color-scheme: light;
+      --page: #f7f4ed;
+      --paper: #fffaf0;
+      --ink: #202a31;
+      --muted: #61707b;
+      --line: #ded6c7;
+      --teal: #00a99d;
+      --teal-dark: #08776f;
+      --coral: #c9583c;
+      --gold: #c79b35;
+      --forest: #285f4d;
+      --shadow: 0 18px 48px rgba(32, 42, 49, 0.14);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      margin: 0;
+      background: var(--page);
+      color: var(--ink);
+      letter-spacing: 0;
+    }
+
+    img {
+      display: block;
+      max-width: 100%;
+    }
+
+    a {
+      color: inherit;
+      text-decoration: none;
+    }
+
+    .site-header {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      border-bottom: 1px solid rgba(222, 214, 199, 0.78);
+      background: rgba(247, 244, 237, 0.92);
+      backdrop-filter: blur(18px);
+    }
+
+    .nav {
+      width: min(1120px, calc(100% - 32px));
+      min-height: 72px;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 18px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      min-width: 0;
+    }
+
+    .brand img {
+      width: 42px;
+      height: 42px;
+      border-radius: 8px;
+      box-shadow: 0 8px 24px rgba(32, 42, 49, 0.18);
+    }
+
+    .brand strong {
+      display: block;
+      font-size: 18px;
+      line-height: 1.1;
+    }
+
+    .brand span {
+      display: block;
+      margin-top: 3px;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 14px;
+      font-weight: 800;
+      color: var(--muted);
+      white-space: nowrap;
+    }
+
+    .nav-links a {
+      border-radius: 8px;
+      padding: 10px 12px;
+    }
+
+    .nav-links a:hover {
+      background: rgba(0, 169, 157, 0.1);
+      color: var(--teal-dark);
+    }
+
+    .hero {
+      position: relative;
+      min-height: clamp(560px, 74vh, 660px);
+      overflow: hidden;
+      padding: 0;
+      display: flex;
+      align-items: center;
+      border-bottom: 1px solid var(--line);
+      background:
+        linear-gradient(90deg, rgba(32, 42, 49, 0.94) 0%, rgba(32, 42, 49, 0.88) 48%, rgba(32, 42, 49, 0.44) 100%),
+        url("screenshots/iphone-6.9/01-player.png") 72% 12% / cover no-repeat;
+      color: #fffaf0;
+    }
+
+    .hero::after {
+      content: "";
+      position: absolute;
+      inset: auto 0 0;
+      height: 90px;
+      background: linear-gradient(0deg, var(--page), rgba(247, 244, 237, 0));
+      pointer-events: none;
+    }
+
+    .hero-inner {
+      position: relative;
+      z-index: 1;
+      width: min(1120px, calc(100% - 32px));
+      margin: 0 auto;
+      padding: 48px 0 124px;
+    }
+
+    .hero-copy {
+      max-width: 720px;
+    }
+
+    .eyebrow {
+      color: #7be0d9;
+      font-size: 14px;
+      font-weight: 900;
+      line-height: 1.5;
+    }
+
+    h1,
+    h2,
+    h3,
+    p {
+      margin: 0;
+    }
+
+    h1 {
+      margin-top: 14px;
+      max-width: 780px;
+      font-size: clamp(46px, 8vw, 76px);
+      line-height: 0.98;
+      font-weight: 950;
+    }
+
+    .hero p {
+      margin-top: 22px;
+      max-width: 660px;
+      color: rgba(255, 250, 240, 0.88);
+      font-size: clamp(18px, 2.4vw, 24px);
+      line-height: 1.58;
+      font-weight: 650;
+    }
+
+    .hero-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 34px;
+    }
+
+    .button {
+      min-height: 46px;
+      border-radius: 8px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border: 1px solid transparent;
+      padding: 0 18px;
+      font-weight: 900;
+      line-height: 1;
+    }
+
+    .button-primary {
+      background: var(--teal);
+      color: #041f22;
+    }
+
+    .button-secondary {
+      border-color: rgba(255, 250, 240, 0.48);
+      color: #fffaf0;
+      background: rgba(255, 250, 240, 0.08);
+    }
+
+    .hero-strip {
+      position: absolute;
+      right: max(22px, calc((100vw - 1120px) / 2));
+      bottom: 28px;
+      z-index: 2;
+      display: grid;
+      grid-template-columns: repeat(3, 88px);
+      gap: 10px;
+    }
+
+    .hero-strip img {
+      height: 190px;
+      width: 88px;
+      object-fit: cover;
+      object-position: top;
+      border: 2px solid rgba(255, 250, 240, 0.72);
+      border-radius: 8px;
+      box-shadow: 0 18px 44px rgba(0, 0, 0, 0.28);
+      background: #101820;
+    }
+
+    main {
+      width: 100%;
+    }
+
+    section {
+      padding: 78px 0;
+    }
+
+    .container {
+      width: min(1120px, calc(100% - 32px));
+      margin: 0 auto;
+    }
+
+    .section-heading {
+      max-width: 760px;
+      margin-bottom: 28px;
+    }
+
+    .section-kicker {
+      color: var(--coral);
+      font-size: 13px;
+      font-weight: 950;
+      line-height: 1.5;
+    }
+
+    h2 {
+      margin-top: 8px;
+      font-size: clamp(30px, 4.8vw, 54px);
+      line-height: 1.08;
+      font-weight: 950;
+    }
+
+    .section-heading p {
+      margin-top: 16px;
+      color: var(--muted);
+      font-size: 18px;
+      line-height: 1.7;
+      font-weight: 600;
+    }
+
+    .feature-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+    }
+
+    .feature-card {
+      min-height: 172px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--paper);
+      padding: 22px;
+      box-shadow: 0 10px 28px rgba(32, 42, 49, 0.06);
+    }
+
+    .feature-card:nth-child(2) {
+      border-top: 4px solid var(--teal);
+    }
+
+    .feature-card:nth-child(3) {
+      border-top: 4px solid var(--gold);
+    }
+
+    .feature-card:nth-child(4) {
+      border-top: 4px solid var(--forest);
+    }
+
+    .feature-card strong {
+      display: block;
+      font-size: 18px;
+      line-height: 1.35;
+    }
+
+    .feature-card p {
+      margin-top: 10px;
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.65;
+      font-weight: 600;
+    }
+
+    .showcase {
+      background: #e9f4f1;
+      border-top: 1px solid #c9ddd8;
+      border-bottom: 1px solid #c9ddd8;
+    }
+
+    .screens {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: 14px;
+      align-items: start;
+    }
+
+    .phone-shot {
+      overflow: hidden;
+      border-radius: 8px;
+      border: 1px solid rgba(32, 42, 49, 0.16);
+      background: #101820;
+      box-shadow: var(--shadow);
+    }
+
+    .phone-shot img {
+      width: 100%;
+      height: auto;
+    }
+
+    .caption {
+      padding: 12px 10px 14px;
+      background: #fffaf0;
+      color: var(--ink);
+      font-size: 13px;
+      font-weight: 900;
+      line-height: 1.4;
+      text-align: center;
+    }
+
+    .use-cases {
+      display: grid;
+      grid-template-columns: 0.9fr 1.1fr;
+      gap: 44px;
+      align-items: center;
+    }
+
+    .use-case-list {
+      display: grid;
+      gap: 12px;
+    }
+
+    .use-case {
+      border-left: 5px solid var(--teal);
+      background: var(--paper);
+      border-radius: 8px;
+      padding: 18px 20px;
+      box-shadow: 0 10px 30px rgba(32, 42, 49, 0.07);
+    }
+
+    .use-case:nth-child(2) {
+      border-left-color: var(--coral);
+    }
+
+    .use-case:nth-child(3) {
+      border-left-color: var(--gold);
+    }
+
+    .use-case:nth-child(4) {
+      border-left-color: var(--forest);
+    }
+
+    .use-case strong {
+      display: block;
+      font-size: 18px;
+      line-height: 1.35;
+    }
+
+    .use-case span {
+      display: block;
+      margin-top: 6px;
+      color: var(--muted);
+      line-height: 1.6;
+      font-weight: 600;
+    }
+
+    .device-panel {
+      min-height: 520px;
+      border-radius: 8px;
+      background:
+        linear-gradient(180deg, rgba(255, 250, 240, 0.18), rgba(255, 250, 240, 0.88)),
+        url("screenshots/ipad-13/03-subtitles.png") center top / cover no-repeat;
+      border: 1px solid var(--line);
+      box-shadow: var(--shadow);
+    }
+
+    .privacy {
+      background: #fffaf0;
+      border-top: 1px solid var(--line);
+      border-bottom: 1px solid var(--line);
+    }
+
+    .privacy-layout {
+      display: grid;
+      grid-template-columns: 0.78fr 1.22fr;
+      gap: 42px;
+      align-items: start;
+    }
+
+    .privacy-summary {
+      position: sticky;
+      top: 98px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 24px;
+      background: #f7f4ed;
+    }
+
+    .privacy-summary img {
+      width: 70px;
+      height: 70px;
+      border-radius: 8px;
+      margin-bottom: 18px;
+      box-shadow: 0 10px 28px rgba(32, 42, 49, 0.16);
+    }
+
+    .privacy-summary p,
+    .policy-section p,
+    .support-card p,
+    .disclaimer p {
+      color: var(--muted);
+      line-height: 1.72;
+      font-weight: 600;
+    }
+
+    .policy-list {
+      display: grid;
+      gap: 14px;
+    }
+
+    .policy-section {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 22px;
+      background: #ffffff;
+    }
+
+    .policy-section h3,
+    .support-card h3,
+    .disclaimer h3 {
+      margin: 0 0 10px;
+      font-size: 20px;
+      line-height: 1.35;
+    }
+
+    .support {
+      background: #f3eee2;
+    }
+
+    .support-grid {
+      display: grid;
+      grid-template-columns: 1.1fr 0.9fr;
+      gap: 14px;
+    }
+
+    .support-card,
+    .disclaimer {
+      border-radius: 8px;
+      border: 1px solid var(--line);
+      background: var(--paper);
+      padding: 24px;
+      min-height: 190px;
+    }
+
+    .email-link {
+      display: inline-flex;
+      align-items: center;
+      min-height: 44px;
+      margin-top: 18px;
+      border-radius: 8px;
+      padding: 0 14px;
+      background: var(--ink);
+      color: #fffaf0;
+      font-weight: 900;
+      word-break: break-word;
+    }
+
+    footer {
+      padding: 28px 0 42px;
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .footer-inner {
+      width: min(1120px, calc(100% - 32px));
+      margin: 0 auto;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      gap: 12px;
+      border-top: 1px solid var(--line);
+      padding-top: 22px;
+    }
+
+    @media (max-width: 920px) {
+      .nav {
+        min-height: 66px;
+      }
+
+      .nav-links {
+        gap: 2px;
+        font-size: 13px;
+      }
+
+      .nav-links a {
+        padding: 9px 8px;
+      }
+
+      .hero {
+        min-height: clamp(560px, 74vh, 650px);
+        background:
+          linear-gradient(180deg, rgba(32, 42, 49, 0.9) 0%, rgba(32, 42, 49, 0.78) 54%, rgba(32, 42, 49, 0.42) 100%),
+          url("screenshots/iphone-6.9/01-player.png") center top / cover no-repeat;
+      }
+
+      .hero-inner {
+        padding: 40px 0 132px;
+      }
+
+      .hero-strip {
+        right: 16px;
+        bottom: 20px;
+        grid-template-columns: repeat(3, 64px);
+      }
+
+      .hero-strip img {
+        width: 64px;
+        height: 138px;
+      }
+
+      .feature-grid,
+      .screens {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .use-cases,
+      .privacy-layout,
+      .support-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .privacy-summary {
+        position: static;
+      }
+
+      .device-panel {
+        min-height: 430px;
+      }
+    }
+
+    @media (max-width: 620px) {
+      .nav {
+        align-items: flex-start;
+        flex-direction: column;
+        padding: 12px 0;
+      }
+
+      .brand span {
+        display: none;
+      }
+
+      .nav-links {
+        width: 100%;
+        overflow-x: auto;
+        padding-bottom: 2px;
+      }
+
+      .hero {
+        min-height: clamp(540px, 72vh, 620px);
+      }
+
+      h1 {
+        font-size: clamp(40px, 13vw, 56px);
+      }
+
+      .hero p {
+        font-size: 17px;
+      }
+
+      section {
+        padding: 58px 0;
+      }
+
+      .feature-grid,
+      .screens {
+        grid-template-columns: 1fr;
+      }
+
+      .phone-shot {
+        max-width: 310px;
+        margin: 0 auto;
+      }
+
+      .device-panel {
+        min-height: 360px;
+      }
+
+      .support-card,
+      .disclaimer,
+      .policy-section,
+      .feature-card,
+      .use-case,
+      .privacy-summary {
+        padding: 18px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header class="site-header">
+    <nav class="nav" aria-label="主导航">
+      <a class="brand" href="#top" aria-label="SoundHub 首页">
+        <img src="assets/soundhub-app-icon-cloud.png" alt="SoundHub 应用图标">
+        <span>
+          <strong>SoundHub</strong>
+          <span>个人音频中心</span>
+        </span>
+      </a>
+      <div class="nav-links">
+        <a href="#features">功能</a>
+        <a href="#screenshots">截图</a>
+        <a href="#privacy">隐私协议</a>
+        <a href="#support">技术支持</a>
+      </div>
+    </nav>
+  </header>
+
+  <main id="top">
+    <section class="hero" aria-labelledby="hero-title">
+      <div class="hero-inner">
+        <div class="hero-copy">
+          <div class="eyebrow">本地音频、网盘音频、字幕转写，集中在一个播放器里</div>
+          <h1 id="hero-title">SoundHub</h1>
+          <p>为长音频、播客、课程、访谈和会议录音准备的个人音频中心。整理播放列表，继续上次进度，离线收听常用内容，也可以为音频生成跟随播放的字幕。</p>
+          <div class="hero-actions" aria-label="页面快捷入口">
+            <a class="button button-primary" href="#screenshots">查看界面</a>
+            <a class="button button-secondary" href="mailto:freedoman2023@gmail.com">联系技术支持</a>
+          </div>
+        </div>
+      </div>
+      <div class="hero-strip" aria-hidden="true">
+        <img src="screenshots/iphone-6.9/02-library.png" alt="">
+        <img src="screenshots/iphone-6.9/03-subtitles.png" alt="">
+        <img src="screenshots/iphone-6.9/05-settings.png" alt="">
+      </div>
+    </section>
+
+    <section id="features" aria-labelledby="features-title">
+      <div class="container">
+        <div class="section-heading">
+          <div class="section-kicker">功能概览</div>
+          <h2 id="features-title">把分散的音频资料变成可继续、可整理、可阅读的资料库。</h2>
+          <p>SoundHub 面向经常收听长音频的人：学习资料、播客订阅、访谈录音、会议备忘和网盘里的历史音频，都可以进入同一个播放工作流。</p>
+        </div>
+        <div class="feature-grid">
+          <article class="feature-card">
+            <strong>本地与网盘集中管理</strong>
+            <p>导入设备中的音频，也可在授权后浏览你的网盘目录，将音频加入队列或播放列表。</p>
+          </article>
+          <article class="feature-card">
+            <strong>长音频友好播放</strong>
+            <p>支持断点续播、进度拖动、倍速播放、随机播放和循环模式，适合课程与播客。</p>
+          </article>
+          <article class="feature-card">
+            <strong>字幕与精听</strong>
+            <p>为音频生成字幕并跟随播放滚动，便于精听、复盘、整理重点和回看录音内容。</p>
+          </article>
+          <article class="feature-card">
+            <strong>离线与隐私控制</strong>
+            <p>常听内容可保存到本机；播放队列、进度、主题和下载内容保存在设备上。</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="showcase" id="screenshots" aria-labelledby="screenshots-title">
+      <div class="container">
+        <div class="section-heading">
+          <div class="section-kicker">界面展示</div>
+          <h2 id="screenshots-title">真实 App 界面截图</h2>
+          <p>从播放页到资源库、字幕、播放列表和设置，核心流程都围绕“更快找到音频，更自然地继续听”。</p>
+        </div>
+        <div class="screens">
+          <figure class="phone-shot">
+            <img src="screenshots/iphone-6.9/01-player.png" alt="SoundHub 播放页截图" loading="lazy">
+            <figcaption class="caption">沉浸播放</figcaption>
+          </figure>
+          <figure class="phone-shot">
+            <img src="screenshots/iphone-6.9/02-library.png" alt="SoundHub 资源库截图" loading="lazy">
+            <figcaption class="caption">资源库</figcaption>
+          </figure>
+          <figure class="phone-shot">
+            <img src="screenshots/iphone-6.9/03-subtitles.png" alt="SoundHub 字幕页截图" loading="lazy">
+            <figcaption class="caption">字幕转写</figcaption>
+          </figure>
+          <figure class="phone-shot">
+            <img src="screenshots/iphone-6.9/04-playlists.png" alt="SoundHub 播放列表截图" loading="lazy">
+            <figcaption class="caption">播放列表</figcaption>
+          </figure>
+          <figure class="phone-shot">
+            <img src="screenshots/iphone-6.9/05-settings.png" alt="SoundHub 设置页截图" loading="lazy">
+            <figcaption class="caption">设置与隐私</figcaption>
+          </figure>
+        </div>
+      </div>
+    </section>
+
+    <section aria-labelledby="scenes-title">
+      <div class="container use-cases">
+        <div class="section-heading">
+          <div class="section-kicker">适用场景</div>
+          <h2 id="scenes-title">听播客、学课程、复盘录音，都可以少折腾一点。</h2>
+          <p>SoundHub 不试图替你决定音频来自哪里，而是把本地文件、网盘资料和字幕整理能力放在一起。</p>
+        </div>
+        <div class="use-case-list">
+          <div class="use-case">
+            <strong>播客与有声资料</strong>
+            <span>用播放列表整理主题，通勤时离线收听。</span>
+          </div>
+          <div class="use-case">
+            <strong>课程与听力学习</strong>
+            <span>倍速播放、断点续播和字幕内容帮助你回到重点片段。</span>
+          </div>
+          <div class="use-case">
+            <strong>访谈与会议录音</strong>
+            <span>为长录音生成字幕，边听边看文本，后续整理更轻松。</span>
+          </div>
+          <div class="use-case">
+            <strong>个人资料库</strong>
+            <span>把不同来源的音频放进同一个队列，不再反复切换工具。</span>
+          </div>
+        </div>
+      </div>
+      <div class="container" aria-hidden="true" style="margin-top: 34px;">
+        <div class="device-panel"></div>
+      </div>
+    </section>
+
+    <section class="privacy" id="privacy" aria-labelledby="privacy-title">
+      <div class="container privacy-layout">
+        <aside class="privacy-summary">
+          <img src="assets/soundhub-app-icon-cloud.png" alt="SoundHub 应用图标">
+          <div class="section-kicker">隐私协议</div>
+          <h2 id="privacy-title">SoundHub 尊重你的隐私。</h2>
+          <p>本协议说明 App 在播放、字幕、离线下载和第三方服务连接中如何处理数据。最后更新：2026-06-24。</p>
+        </aside>
+        <div class="policy-list">
+          <article class="policy-section">
+            <h3>我们收集的信息</h3>
+            <p>SoundHub 会在本机保存播放队列、播放进度、播放列表、主题偏好、字幕设置、诊断日志和你导入或离线下载的音频文件。</p>
+          </article>
+          <article class="policy-section">
+            <h3>百度网盘授权</h3>
+            <p>当你主动登录百度网盘时，SoundHub 会使用你填写的百度开放平台 Client ID 发起授权，并将访问令牌保存在设备安全存储中，用于浏览和播放你选择的网盘音频。</p>
+          </article>
+          <article class="policy-section">
+            <h3>字幕与云端服务</h3>
+            <p>本地转写会在设备上处理音频。选择云端转写、后台云端任务或语言模型修正时，SoundHub 会把必要的音频片段或字幕文本发送到你在设置中配置的服务提供商。</p>
+          </article>
+          <article class="policy-section">
+            <h3>第三方服务</h3>
+            <p>百度网盘、云端 Whisper、语言模型服务和你配置的自定义 Endpoint 会按照各自的隐私政策处理请求。请只连接你信任的服务。</p>
+          </article>
+          <article class="policy-section">
+            <h3>数据控制</h3>
+            <p>你可以在 App 内断开百度网盘、清空诊断日志、删除字幕、清空离线下载，或删除 App 以移除本机保存的数据。</p>
+          </article>
+          <article class="policy-section">
+            <h3>儿童隐私</h3>
+            <p>SoundHub 不面向儿童设计，也不会有意收集儿童个人信息。</p>
+          </article>
+          <article class="policy-section">
+            <h3>政策更新</h3>
+            <p>我们可能会随着功能变化更新本政策。发布到商店的版本应同时提供可公开访问的隐私政策网页。</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="support" id="support" aria-labelledby="support-title">
+      <div class="container">
+        <div class="section-heading">
+          <div class="section-kicker">技术支持</div>
+          <h2 id="support-title">需要帮助或反馈问题？</h2>
+          <p>请通过邮件联系 SoundHub 技术支持。为了更快定位问题，可以在邮件中附上设备型号、系统版本、App 版本、问题发生步骤和相关截图。</p>
+        </div>
+        <div class="support-grid">
+          <article class="support-card">
+            <h3>支持邮箱</h3>
+            <p>我们会尽力处理播放、授权、字幕、离线下载和隐私相关问题，也欢迎提出功能建议。</p>
+            <a class="email-link" href="mailto:freedoman2023@gmail.com">freedoman2023@gmail.com</a>
+          </article>
+          <article class="disclaimer">
+            <h3>服务说明</h3>
+            <p>SoundHub 不是百度网盘的官方客户端，也不代表其运营方。登录、文件访问和播放能力以你的主动授权及服务方规则为准。第三方云端转写或语言模型服务仅在你主动配置并使用时发生。</p>
+          </article>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="footer-inner">
+      <span>© 2026 SoundHub. All rights reserved.</span>
+      <span><a href="#privacy">隐私协议</a> · <a href="mailto:freedoman2023@gmail.com">技术支持</a></span>
+    </div>
+  </footer>
+</body>
+</html>
